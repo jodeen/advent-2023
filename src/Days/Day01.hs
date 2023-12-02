@@ -35,11 +35,16 @@ type OutputA = Int
 
 type OutputB = Int
 
+------------ PART A ------------
 readNum :: Text -> Int
 readNum input = read [Text.head numbers, Text.last numbers]
     where
         numbers = Text.filter isDigit input
 
+partA :: Input -> OutputA
+partA input = sum (List.map readNum input)
+
+------------ PART B ------------
 readNumB :: Text -> Int
 readNumB input = read [Text.head numbers, Text.last numbers]
     where
@@ -54,11 +59,6 @@ wordsToNumber input = case List.find (\(w, _) -> w `List.isPrefixOf` input) numb
     Just (w, n) -> n : wordsToNumber (List.tail input)
     Nothing -> (List.head input) : wordsToNumber (List.tail input)
 
------------- PART A ------------
-partA :: Input -> OutputA
-partA input = sum (List.map readNum input)
-
------------- PART B ------------
 partB :: Input -> OutputB
 partB input =  sum (List.map readNumB input)
 

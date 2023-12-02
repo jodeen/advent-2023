@@ -41,7 +41,7 @@ library:
     - GHC2021
 
 executables:
-  aoc-template-exe:
+  aoc-2023-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
