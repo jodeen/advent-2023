@@ -12,8 +12,10 @@ import qualified Data.Vector as Vec
 import qualified Util.Util as U
 
 import qualified Program.RunDay as R (runDay, Day)
-import Data.Attoparsec.Text
+import Data.Attoparsec.Text 
 import Data.Void
+import Data.Char (isSpace)
+import Data.Functor (($>))
 {- ORMOLU_ENABLE -}
 
 runDay :: R.Day
@@ -21,19 +23,54 @@ runDay = R.runDay inputParser partA partB
 
 ------------ PARSER ------------
 inputParser :: Parser Input
-inputParser = error "Not implemented yet!"
+inputParser = parseLine `sepBy1` endOfLine
+
+parseLine :: Parser ([Int], [Int])
+-- parseLine = (skipWhile (/= ':') ) *> char ':' *> ((,) <$> (many1 parseNumbers) <*> (skipSpace *> char '|' *> many1 parseNumbers))
+parseLine = do
+    string "Card"
+    skipSpace
+    decimal
+    string ":"
+    winning <- many1 parseNumbers
+    skipSpace
+    char '|'
+    have <- many1 parseNumbers
+    return (winning, have)
+    where 
+        parseNumbers = skipSpace >> decimal
+
 
 ------------ TYPES ------------
-type Input = Void
+type Input = [([Int], [Int])]
 
-type OutputA = Void
+type OutputA = Int
 
-type OutputB = Void
+type OutputB = Int
 
 ------------ PART A ------------
+findWinning :: ([Int], [Int]) -> [Int]
+findWinning (winning, have) = nub (winning `intersect` have)
+
+calcPoints :: [Int] -> Int
+calcPoints [] = 0
+calcPoints selected = 2 ^ ((length selected)-1)
+
 partA :: Input -> OutputA
-partA = error "Not implemented yet!"
+partA input = sum (map (calcPoints . findWinning)  input)
 
 ------------ PART B ------------
+incrementNext :: Int -> Int -> [Int] -> [Int]
+incrementNext amount count input = zipWith (+) input ((replicate count amount) ++ (repeat 0))
+
+doCard :: (Int, [Int]) -> ([Int], [Int]) -> (Int, [Int])
+doCard (count, (timesToRun: xs)) game = (count + timesToRun, futureCards)
+    where
+        winning = findWinning game
+        futureCards = (incrementNext timesToRun) (length winning) xs
+
+
 partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+partB input = res
+    where 
+        (res, _) = foldl' doCard (0, replicate (length input) 1) input
