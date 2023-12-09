@@ -15,25 +15,42 @@ import qualified Program.RunDay as R (runDay, Day)
 import Data.Attoparsec.Text
 import Data.Void
 {- ORMOLU_ENABLE -}
+{- HLINT ignore "Redundant bracket" -}
 
 runDay :: R.Day
 runDay = R.runDay inputParser partA partB
 
 ------------ PARSER ------------
 inputParser :: Parser Input
-inputParser = error "Not implemented yet!"
+inputParser = ((signed decimal) `sepBy1'` (char ' ')) `sepBy1'` endOfLine
 
 ------------ TYPES ------------
-type Input = Void
+type Input = [[Integer]]
 
-type OutputA = Void
+type OutputA = Integer
 
-type OutputB = Void
+type OutputB = Integer
 
 ------------ PART A ------------
-partA :: Input -> OutputA
-partA = error "Not implemented yet!"
+pairwiseDifference :: [Integer] -> [Integer]
+pairwiseDifference a = zipWith (-) (tail a) a
+
+
+findNext ints 
+        | all (==0) ints = 0
+        | otherwise = (last ints) + (findNext diff)
+    where 
+        diff = pairwiseDifference ints
+
+-- partA :: Input -> OutputA
+partA input = sum (map findNext input)
 
 ------------ PART B ------------
-partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+findPrev ints 
+        | all (==0) ints = 0
+        | otherwise = (head ints) - (findPrev diff)
+    where 
+        diff = pairwiseDifference ints
+
+-- partB :: Input -> OutputB
+partB input = sum (map findPrev input)
