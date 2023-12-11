@@ -19,6 +19,7 @@ import Control.Monad (filterM)
 import GHC.IO (unsafePerformIO)
 import Util.Util (chunksOf)
 {- ORMOLU_ENABLE -}
+{- HLINT ignore "Redundant bracket" -}
 
 runDay :: R.Day
 runDay = R.runDay inputParser partA partB
@@ -34,7 +35,7 @@ type Coords = Map Point Char
 
 type OutputA = Int
 
-type OutputB = Void
+type OutputB = Int
 
 ------------ PART A ------------
 toCoordsMap :: [String] ->Coords
@@ -69,10 +70,10 @@ doStep coords endPoint (prevPoint, currentPoint) = if currentPoint == endPoint t
         nextPoint = head (filter (/= prevPoint) (connections currentPoint (coords Map.! currentPoint)))
 
 walkPath :: Coords -> Point -> [Point]
-walkPath coords start = next : unfoldr (doStep coords start) (start, next) 
-    where 
+walkPath coords start = next : unfoldr (doStep coords start) (start, next)
+    where
         next = head (initPipes coords start)
-        
+
 
 partA :: Input -> OutputA
 partA input = (length path) `div` 2
@@ -82,70 +83,26 @@ partA input = (length path) `div` 2
         path = walkPath coords start
 
 ------------ PART B ------------
-toInOutRow :: String -> [Bool]
-toInOutRow row = tail (scanl swapInOutRowChar False row)
-
-swapInOutRowChar :: Bool -> Char -> Bool
-swapInOutRowChar state char = if (char `elem` ['|', 'L', 'J', '7', 'F']) then (not state) else state
-
-toInOutCol :: String -> [Bool]
-toInOutCol row = tail (scanl swapInOutColChar False row)
-
-swapInOutColChar :: Bool -> Char -> Bool
-swapInOutColChar state char = if (char `elem` ['-', 'L', 'J', '7', 'F']) then (not state) else state
-
-inOutMap path input = zipWith3 (\point row col -> (point `notElem` path) && (col && row)) points rowwise colwise
+-- a point is inside the cycle if there's an odd number of vertical lines to the left (or right)
+isInside :: [Point] -> Point -> Bool
+isInside path (col, row) = ((col, row) `notElem` path) && odd (length rowPairs)
     where
-        rowwise = concatMap toInOutRow input
-        colwise = concat (transpose (map toInOutCol (transpose input)))
-        points = [(x,y) | y<-[0..(length input)-1], x <- [0..(length (head input))-1] ]
-
-findProperS :: Coords -> Point -> Char
-findProperS coords (x,y) = case (north, south, east, west) of 
-    (True, True, False, False) -> '|'
-    (False, False, True, True) -> '-'
-    (True, False, True, False) -> 'L'
-    (True, False, False, True) -> 'J'
-    (False, True, False, True) -> '7'
-    (False, True, True, False) -> 'F'
-    where
-        north = isJust (findMapValue coords (x,y-1) "|F7")
-        south = isJust (findMapValue coords (x,y+1) "|LJ")
-        east = isJust (findMapValue coords (x+1,y) "-J7")
-        west = isJust (findMapValue coords (x-1,y) "-LF")
-
-
-replace :: [String] -> (Int, Int) -> Char -> [String]
-replace input (column, row) c = headRows ++ ((headCols ++ (c : tailCols)) : tailRows)
-    where
-        (headRows, rowData:tailRows) = splitAt row input
-        (headCols, colData:tailCols) = splitAt column rowData
-
-removeNonPath :: [Point] -> [String] -> [String]
-removeNonPath path input = chunksOf (length (head input)) (map (\(p, c) -> if p `notElem` path then '.' else c) (zip coords (concat input)))
-    where
-        coords = [(x,y) | y<-[0..(length input)-1], x <- [0..(length (head input))-1] ]
-
-
--- isVertical :: Int -> (Point, Point) -> Bool
--- isVertical num ((ax, ay), (bx, by)) = ((by == num) ) && (ay /= by)
-
--- -- verticalLines :: [Point] -> Int -> [Point]
--- verticalLines path row = filter (isVertical row) pairs
---     where
---         pairs = zip ((last path) : path) path
+        pairs = zip ((last path) : path) path
+        -- first we normalize the pairs by ordering them by increasing (x,y) values 
+        -- that way we only need to check the ending values of the path
+        normPairs = map (\(a,b) -> if a<=b then (a,b) else (b,a)) (filter (\((_, ay), (_,by)) -> ay /= by) pairs)
+        rowPairs = filter (\(_, (x,y)) -> y == row && x <= col) normPairs
 
 
 
--- partB :: Input -> OutputB
-partB input =  unsafePerformIO (putStr (unlines inOutChunked))
+partB :: Input -> OutputB
+partB input =  pointCount
     where
         coords = toCoordsMap input
         Just start = fmap fst (find (\(_,c) -> c == 'S') (Map.assocs coords))
         path = walkPath coords start
 
-        properS = findProperS coords start
-        properInput = removeNonPath path (replace input start properS)
-        inOut = inOutMap path properInput
-        inOutChunked =  chunksOf (length (head input)) (map (\b -> if b then '*' else '.') inOut)
-        
+        allPoints = [(x,y) | y<-[0..(length input)-1], x <- [0..(length (head input))-1] ]
+        pointCount = length (filter id (map (isInside path) allPoints))
+
+
