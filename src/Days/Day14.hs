@@ -21,18 +21,26 @@ runDay = R.runDay inputParser partA partB
 
 ------------ PARSER ------------
 inputParser :: Parser Input
-inputParser = error "Not implemented yet!"
+inputParser = (many1' (notChar '\n')) `sepBy1'` endOfLine
 
 ------------ TYPES ------------
-type Input = Void
+type Input = [String]
 
-type OutputA = Void
+type OutputA = Int
 
 type OutputB = Void
 
 ------------ PART A ------------
+countLeft idx weightValue ('.':xs) = countLeft (idx-1) weightValue xs
+countLeft idx weightValue ('O':xs) = weightValue + countLeft (idx-1) (weightValue-1) xs
+countLeft idx weightValue ('#':xs) = countLeft (idx-1) (idx-1) xs
+countLeft _ _ [] = 0
+
 partA :: Input -> OutputA
-partA = error "Not implemented yet!"
+partA input = sum (map (countLeft len len) swapped)
+    where
+        swapped = transpose input
+        len = length (head swapped)
 
 ------------ PART B ------------
 partB :: Input -> OutputB
