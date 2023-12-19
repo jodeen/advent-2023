@@ -28,6 +28,7 @@ dependencies:
 - text
 - mtl
 - vector
+- search-algorithms
 
 library:
   source-dirs: src

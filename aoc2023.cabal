@@ -74,6 +74,7 @@ library
     , mtl
     , optparse-applicative
     , parser-combinators
+    , search-algorithms
     , text
     , time
     , vector
@@ -104,6 +105,7 @@ executable aoc-2023-exe
     , mtl
     , optparse-applicative
     , parser-combinators
+    , search-algorithms
     , text
     , time
     , vector
