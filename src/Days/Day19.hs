@@ -79,11 +79,12 @@ type Input = (Workflow, [Rating])
 data Condition = LT String Int | GT String Int | T deriving Show
 type Workflow = Map String [(Condition, String)]
 type Rating = Map String Int
+type RatingB = Map String (Int, Int)
 
 
-type OutputA = Void
+type OutputA = Int
 
-type OutputB = Void
+type OutputB = Int
 
 ------------ PART A ------------
 processCondition :: Rating -> Condition -> Bool
@@ -107,11 +108,47 @@ isAccepted workflow "R" rating = False
 isAccepted workflow key rating  = isAccepted workflow  (processWorkflow rating (workflow Map.! key)) rating
         
 
--- partA :: Input -> OutputA
+partA :: Input -> OutputA
 partA (workflow, ratings) = sum (concatMap Map.elems accepted)
     where
         accepted = filter (isAccepted workflow "in") ratings
 
 ------------ PART B ------------
+processWorkflowB :: Workflow -> RatingB -> [(Condition, String)] -> [RatingB]
+processWorkflowB _ rating [] = [rating]
+processWorkflowB workflow rating ((condition, "R"): xs) = case processConditionB rating condition  of
+    (Just nextRating, Nothing) -> []
+    (Nothing, Just negRating) -> processWorkflowB workflow negRating xs
+    (Just nextRating, Just negRating) -> processWorkflowB workflow negRating xs
+
+processWorkflowB workflow rating ((condition, next): xs) = case processConditionB rating condition  of
+    (Just nextRating, Nothing) -> processWorkflowB workflow nextRating (workflow Map.! next)
+    (Nothing, Just negRating) -> processWorkflowB workflow negRating xs
+    (Just nextRating, Just negRating) -> (processWorkflowB workflow nextRating (workflow Map.! next)) ++ (processWorkflowB workflow negRating xs)
+
+
+processConditionB :: RatingB -> Condition -> (Maybe RatingB, Maybe RatingB)
+processConditionB rating (LT key value) 
+    | value >= end = (Just rating, Nothing)
+    | value > start = (Just (Map.insert key (start, value) rating), Just (Map.insert key (value, end) rating))
+    | otherwise = (Nothing, Just rating)
+    where
+        (start, end) = rating Map.! key
+        
+processConditionB rating (GT key value) 
+    | value <= start = (Just rating, Nothing)
+    | value < end = (Just (Map.insert key (value+1, end) rating), Just (Map.insert key (start, value+1) rating) )
+    | otherwise = (Nothing, Just rating)
+    where
+        (start, end) = rating Map.! key      
+processConditionB rating T = (Just rating, Nothing)
+
+calcCombos :: RatingB -> Int
+calcCombos rating = product (map (\(s,e) -> e - s) (Map.elems rating))
+
 partB :: Input -> OutputB
-partB = error "Not implemented yet!"
+partB (workflow, _) = sum (map calcCombos ratings)
+    where
+        initRating = Map.fromList [("x", (1, 4001)), ("m", (1, 4001)), ("a", (1, 4001)), ("s", (1, 4001))]
+        fullWf = Map.insert "A" [] workflow
+        ratings = processWorkflowB fullWf initRating (workflow Map.! "in") 
